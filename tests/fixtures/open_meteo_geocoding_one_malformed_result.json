@@ -1,0 +1,16 @@
+{
+  "results": [
+    {
+      "id": 3467865,
+      "name": "Cabo Frio",
+      "latitude": -22.8894,
+      "longitude": -42.0286,
+      "country": "Brasil",
+      "admin1": "Rio de Janeiro"
+    },
+    {
+      "id": 999999,
+      "name": "Local Quebrado"
+    }
+  ]
+}

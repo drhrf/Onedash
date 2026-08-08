@@ -1,0 +1,7 @@
+{
+  "version": 0.6,
+  "elements": [
+    {"type": "way", "id": 200001, "tags": {"amenity": "hospital", "name": "Way A"}},
+    {"type": "way", "id": 200002, "tags": {"amenity": "clinic", "name": "Way B"}}
+  ]
+}

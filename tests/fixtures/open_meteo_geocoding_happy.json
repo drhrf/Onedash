@@ -1,0 +1,21 @@
+{
+  "results": [
+    {
+      "id": 3467865,
+      "name": "Cabo Frio",
+      "latitude": -22.8894,
+      "longitude": -42.0286,
+      "country": "Brasil",
+      "admin1": "Rio de Janeiro"
+    },
+    {
+      "id": 3471872,
+      "name": "Armação dos Búzios",
+      "latitude": -22.7469,
+      "longitude": -41.8817,
+      "country": "Brasil",
+      "admin1": "Rio de Janeiro"
+    }
+  ],
+  "generationtime_ms": 0.5
+}

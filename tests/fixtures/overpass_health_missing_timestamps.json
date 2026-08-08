@@ -1,0 +1,7 @@
+{
+  "version": 0.6,
+  "elements": [
+    {"type": "node", "id": 100001, "lat": -22.889, "lon": -42.028, "tags": {"amenity": "hospital", "name": "Hospital X"}},
+    {"type": "node", "id": 100002, "lat": -22.885, "lon": -42.030, "tags": {"amenity": "pharmacy"}}
+  ]
+}

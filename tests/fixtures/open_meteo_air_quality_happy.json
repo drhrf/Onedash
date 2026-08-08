@@ -1,0 +1,14 @@
+{
+  "latitude": -22.88,
+  "longitude": -42.02,
+  "timezone": "UTC",
+  "current": {
+    "time": "2026-08-08T12:00",
+    "pm2_5": 8.3,
+    "pm10": 12.1,
+    "carbon_monoxide": 180.0,
+    "nitrogen_dioxide": 5.2,
+    "ozone": 45.0,
+    "us_aqi": 34
+  }
+}
