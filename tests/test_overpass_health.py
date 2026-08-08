@@ -112,6 +112,36 @@ class TestOverpassHealthEdgeCases:
         assert len(result.records) == 1
         assert result.records[0].label == "Hospital Válido"
 
+    @responses.activate
+    def test_all_elements_invalid_is_empty_not_error(self, source, sample_aoi):
+        # Every element lacks lat/lon (e.g. ways without a resolved
+        # center) — distinct from an empty `elements` list, but should
+        # land on the same user-facing EMPTY status, not ERROR.
+        responses.add(
+            responses.POST, BASE_URL, json=load_fixture("overpass_health_all_elements_invalid.json"), status=200
+        )
+        result = source.fetch(sample_aoi)
+        assert result.status is SourceStatus.EMPTY
+
+    @responses.activate
+    def test_unparseable_timestamp_string_falls_back_to_none_not_crash(self, source, sample_aoi):
+        responses.add(
+            responses.POST, BASE_URL, json=load_fixture("overpass_health_bad_timestamp_string.json"), status=200
+        )
+        result = source.fetch(sample_aoi)
+        assert result.status is SourceStatus.OK
+        assert result.records[0].observation_time is None
+
+    @responses.activate
+    def test_out_of_range_coordinates_are_skipped_not_crash(self, source, sample_aoi):
+        responses.add(
+            responses.POST, BASE_URL, json=load_fixture("overpass_health_out_of_range_coords.json"), status=200
+        )
+        result = source.fetch(sample_aoi)
+        # The only element has lat=200 (invalid); GeoRecord construction
+        # fails validation and _parse_element skips it, leaving no records.
+        assert result.status is SourceStatus.EMPTY
+
 
 class TestOverpassHealthRetryBehavior:
     @responses.activate
@@ -122,6 +152,13 @@ class TestOverpassHealthRetryBehavior:
         assert result.status is SourceStatus.OK
         assert len(responses.calls) == 2
         assert sleeps == [1.0]
+
+    @responses.activate
+    def test_other_request_exception_is_not_retried(self, source, sample_aoi):
+        responses.add(responses.POST, BASE_URL, body=requests.exceptions.RequestException("erro genérico"))
+        result = source.fetch(sample_aoi)
+        assert result.status is SourceStatus.ERROR
+        assert len(responses.calls) == 1  # not retried, unlike Timeout/ConnectionError/429/504
 
     @responses.activate
     def test_504_is_retried(self, source, sample_aoi):

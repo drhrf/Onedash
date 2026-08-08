@@ -67,6 +67,19 @@ class TestSearchLocations:
         assert result.matches == []
 
     @responses.activate
+    def test_connection_error_is_reported_as_error(self):
+        responses.add(responses.GET, BASE_URL, body=requests.exceptions.ConnectionError())
+        result = search_locations("Cabo Frio")
+        assert not result.ok
+        assert result.matches == []
+
+    @responses.activate
+    def test_other_request_exception_is_reported_as_error(self):
+        responses.add(responses.GET, BASE_URL, body=requests.exceptions.RequestException("erro genérico"))
+        result = search_locations("Cabo Frio")
+        assert not result.ok
+
+    @responses.activate
     def test_http_error_is_reported(self):
         responses.add(responses.GET, BASE_URL, json={}, status=503)
         result = search_locations("Cabo Frio")

@@ -83,6 +83,15 @@ class TestOpenMeteoWeatherErrorHandling:
         assert "conexão" in result.error_message
 
     @responses.activate
+    def test_other_request_exception_is_error_status(self, source, sample_aoi):
+        # Anything requests.exceptions.RequestException-derived that isn't
+        # specifically Timeout/ConnectionError/HTTPError should still be
+        # caught by the generic fallback branch, not leak out as a crash.
+        responses.add(responses.GET, BASE_URL, body=requests.exceptions.RequestException("erro genérico"))
+        result = source.fetch(sample_aoi)
+        assert result.status is SourceStatus.ERROR
+
+    @responses.activate
     def test_non_json_body_is_error_status(self, source, sample_aoi):
         responses.add(responses.GET, BASE_URL, body="not-json-at-all{{{", status=200, content_type="text/plain")
         result = source.fetch(sample_aoi)

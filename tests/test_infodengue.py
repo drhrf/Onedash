@@ -137,6 +137,12 @@ class TestInfoDengueErrorHandling:
         assert result.status is SourceStatus.ERROR
 
     @responses.activate
+    def test_other_request_exception_is_error(self, source, sample_aoi):
+        responses.add(responses.GET, BASE_URL, body=requests.exceptions.RequestException("erro genérico"))
+        result = source.fetch(sample_aoi)
+        assert result.status is SourceStatus.ERROR
+
+    @responses.activate
     def test_unmocked_request_is_handled_gracefully(self, source, sample_aoi):
         result = source.fetch(sample_aoi)
         assert result.status is SourceStatus.ERROR

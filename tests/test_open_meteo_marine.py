@@ -66,6 +66,24 @@ class TestOpenMeteoMarine:
         assert result.status is SourceStatus.ERROR
 
     @responses.activate
+    def test_timeout_is_error(self, source, sample_aoi):
+        responses.add(responses.GET, BASE_URL, body=requests.exceptions.Timeout())
+        result = source.fetch(sample_aoi)
+        assert result.status is SourceStatus.ERROR
+
+    @responses.activate
+    def test_other_request_exception_is_error(self, source, sample_aoi):
+        responses.add(responses.GET, BASE_URL, body=requests.exceptions.RequestException("erro genérico"))
+        result = source.fetch(sample_aoi)
+        assert result.status is SourceStatus.ERROR
+
+    @responses.activate
+    def test_malformed_json_is_error(self, source, sample_aoi):
+        responses.add(responses.GET, BASE_URL, body="{{{not json", status=200)
+        result = source.fetch(sample_aoi)
+        assert result.status is SourceStatus.ERROR
+
+    @responses.activate
     def test_missing_wave_height_field_is_error_not_crash(self, source, sample_aoi):
         responses.add(responses.GET, BASE_URL, json={"current": {"time": "2026-08-08T12:00"}}, status=200)
         result = source.fetch(sample_aoi)

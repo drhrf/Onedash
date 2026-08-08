@@ -62,6 +62,24 @@ class TestFetchResult:
         )
         assert result.status is SourceStatus.OK
 
+    def test_observation_time_naive_raises(self):
+        with pytest.raises(ValidationError):
+            FetchResult(
+                source_id="s",
+                status=SourceStatus.OK,
+                fetched_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                observation_time=datetime(2026, 1, 1),
+            )
+
+    def test_observation_time_aware_is_accepted(self):
+        result = FetchResult(
+            source_id="s",
+            status=SourceStatus.OK,
+            fetched_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            observation_time=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        )
+        assert result.observation_time is not None
+
     def test_defaults(self):
         result = FetchResult(
             source_id="s", status=SourceStatus.EMPTY, fetched_at=datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -85,6 +103,10 @@ class TestAreaOfInterest:
     def test_invalid_lat_raises(self):
         with pytest.raises(ValidationError):
             AreaOfInterest(lat=-95.0, lon=0.0)
+
+    def test_invalid_lon_raises(self):
+        with pytest.raises(ValidationError):
+            AreaOfInterest(lat=0.0, lon=200.0)
 
     def test_default_radius(self):
         aoi = AreaOfInterest(lat=0.0, lon=0.0)

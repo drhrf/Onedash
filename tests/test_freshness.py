@@ -84,6 +84,37 @@ class TestComputeFreshness:
         assert result.level is FreshnessLevel.FRESH
 
 
+class TestHumanizeDescriptionBoundaries:
+    """Exercises every _humanize() bucket directly through the public
+    compute_freshness() interface, including the multi-year case that a
+    facility registry or an old WHO-style indicator would actually hit."""
+
+    def test_seconds_reads_as_agora_mesmo(self):
+        result = compute_freshness(NOW - timedelta(seconds=10), profile="default", now=NOW)
+        assert result.description == "agora mesmo"
+
+    def test_minutes(self):
+        result = compute_freshness(NOW - timedelta(minutes=5), profile="default", now=NOW)
+        assert result.description == "há 5 min"
+
+    def test_hours(self):
+        result = compute_freshness(NOW - timedelta(hours=3), profile="default", now=NOW)
+        assert result.description == "há 3 h"
+
+    def test_days(self):
+        result = compute_freshness(NOW - timedelta(days=10), profile="osm_facility", now=NOW)
+        assert result.description == "há 10 dias"
+
+    def test_months(self):
+        result = compute_freshness(NOW - timedelta(days=90), profile="osm_facility", now=NOW)
+        assert "meses" in result.description
+
+    def test_years(self):
+        result = compute_freshness(NOW - timedelta(days=1000), profile="osm_facility", now=NOW)
+        assert "anos" in result.description
+        assert result.level is FreshnessLevel.STALE
+
+
 class TestAggregateObservationTime:
     def test_empty_list_returns_none(self):
         assert aggregate_observation_time([]) is None
