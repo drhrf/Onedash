@@ -49,6 +49,11 @@ def render_panel(panel_index: int, aoi: AreaOfInterest, disease: str) -> None:
 
 
 def _render_freshness_badges(selected_layer_ids: list[str], results: dict) -> None:
+    # Two distinct timestamps are shown deliberately: how old the DATA
+    # itself is (observation_time, color-coded) vs. how recently we simply
+    # CHECKED the API (fetched_at, a plain caption) — a cached-but-stale
+    # result would otherwise look "fresh" just because it was checked
+    # moments ago, hiding the actual data lag this feature exists to show.
     lines = []
     for layer_id in selected_layer_ids:
         result = results.get(layer_id)
@@ -56,7 +61,11 @@ def _render_freshness_badges(selected_layer_ids: list[str], results: dict) -> No
             continue
         layer = get_layer(layer_id)
         fresh = compute_freshness(result.observation_time, profile=layer.source_cls.freshness_profile)
+        checked = compute_freshness(result.fetched_at, profile="default")
         color = FRESHNESS_COLOR[fresh.level]
-        lines.append(f":{color}[●] **{layer.label_pt}**: {fresh.description}")
+        lines.append(
+            f":{color}[●] **{layer.label_pt}**: {fresh.description} "
+            f"({t.PANEL_FRESHNESS_CHECKED_PREFIX} {checked.description})"
+        )
     if lines:
         st.caption("  \n".join(lines))

@@ -99,6 +99,43 @@ class TestLayerSelection:
         assert not at.exception
 
 
+class TestFreshnessBadges:
+    def test_badge_shows_both_data_age_and_checked_time(self, monkeypatch):
+        # observation_time and fetched_at are deliberately different here:
+        # a cached-but-stale result must not read as "fresh" just because
+        # it was checked recently (the whole point of the time-lag feature).
+        observation_time = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        fetched_at = datetime(2026, 1, 1, 2, 0, 0, tzinfo=timezone.utc)
+        result = FetchResult(
+            source_id="open_meteo_weather",
+            status=SourceStatus.OK,
+            records=[],
+            observation_time=observation_time,
+            fetched_at=fetched_at,
+        )
+        monkeypatch.setattr("onedash.ui.panel.fetch_layer", lambda *a, **k: result)
+
+        at = _make_app()
+        at.run(timeout=15)
+        at.multiselect[0].select("open_meteo_weather").run(timeout=15)
+
+        assert not at.exception
+        caption_text = " ".join(c.value for c in at.caption)
+        assert "verificado" in caption_text
+        assert "Clima atual" in caption_text
+
+    def test_no_badge_shown_when_no_layer_is_ok(self, monkeypatch):
+        error_result = FetchResult(
+            source_id="open_meteo_weather", status=SourceStatus.ERROR, fetched_at=FETCHED_AT, error_message="x"
+        )
+        monkeypatch.setattr("onedash.ui.panel.fetch_layer", lambda *a, **k: error_result)
+        at = _make_app()
+        at.run(timeout=15)
+        at.multiselect[0].select("open_meteo_weather").run(timeout=15)
+        assert not at.exception
+        assert not any("verificado" in c.value for c in at.caption)
+
+
 class TestLocationSearch:
     def test_search_with_a_match_updates_current_location(self, monkeypatch):
         result = GeocodeSearchResult(
