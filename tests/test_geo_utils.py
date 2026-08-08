@@ -101,3 +101,29 @@ class TestBboxFromRadius:
     def test_near_pole_does_not_raise_zero_division(self):
         # cos(lat) approaches 0 near the poles; must not divide by zero.
         geo_utils.bbox_from_radius(89.999, 0.0, 10.0)
+
+
+class TestHaversineKm:
+    def test_same_point_is_zero_distance(self):
+        assert geo_utils.haversine_km(-22.8894, -42.0286, -22.8894, -42.0286) == pytest.approx(0.0, abs=1e-9)
+
+    def test_one_degree_longitude_at_equator_is_about_111_km(self):
+        # Definitional check: 1 degree of longitude at the equator is the
+        # same ~111.32 km/degree constant used by bbox_from_radius.
+        distance = geo_utils.haversine_km(0.0, 0.0, 0.0, 1.0)
+        assert distance == pytest.approx(geo_utils.KM_PER_DEGREE_LAT, abs=0.2)
+
+    def test_one_degree_latitude_is_about_111_km(self):
+        distance = geo_utils.haversine_km(0.0, 0.0, 1.0, 0.0)
+        assert distance == pytest.approx(111.19, abs=0.2)
+
+    def test_is_symmetric(self):
+        a = geo_utils.haversine_km(-22.8894, -42.0286, -22.7469, -41.8817)
+        b = geo_utils.haversine_km(-22.7469, -41.8817, -22.8894, -42.0286)
+        assert a == pytest.approx(b)
+
+    def test_neighboring_regiao_dos_lagos_towns_are_a_plausible_distance_apart(self):
+        # Cabo Frio to Armação dos Búzios: neighboring coastal towns, clearly
+        # not the same spot but well within the same small region.
+        distance = geo_utils.haversine_km(-22.8894, -42.0286, -22.7469, -41.8817)
+        assert 10.0 < distance < 40.0
