@@ -65,6 +65,15 @@ def build_figure(
             )
         )
 
+    if not fig.data:
+        # Plotly only renders the `map` subplot (tiles, pan/zoom) when the
+        # figure has at least one map-type trace — a layout.map config with
+        # zero traces silently falls back to a generic Cartesian axes plot
+        # instead of a map. An invisible empty trace keeps the map view (and
+        # the "select a layer" info message that accompanies it) correct
+        # even when no data layer is active.
+        fig.add_trace(go.Scattermap(lat=[], lon=[], mode="markers", showlegend=False))
+
     fig.update_layout(
         map=dict(style=MAP_STYLE, center=dict(lat=center_lat, lon=center_lon), zoom=zoom),
         margin=dict(l=0, r=0, t=0, b=0),

@@ -40,22 +40,41 @@ def _unsupported(source_id, message="não disponível aqui"):
     )
 
 
+def _data_trace_count(figure: go.Figure) -> int:
+    """Counts traces that actually carry points, excluding the invisible
+    placeholder trace build_figure adds so Plotly still renders the `map`
+    subplot (tiles, pan/zoom) when no real data layer is active — without
+    at least one map-type trace, Plotly silently falls back to a generic
+    Cartesian axes plot instead of a map, which a bare `len(figure.data)`
+    check can't tell apart from "correctly showing an empty map"."""
+    return sum(1 for trace in figure.data if len(trace.lat) > 0)
+
+
 class TestBuildFigureBasics:
-    def test_zero_layers_returns_base_map_with_no_traces(self):
+    def test_zero_layers_returns_base_map_with_no_data_traces(self):
         result = build_figure(-22.88, -42.02, {})
         assert isinstance(result.figure, go.Figure)
-        assert len(result.figure.data) == 0
+        assert _data_trace_count(result.figure) == 0
         assert result.warnings == []
 
-    def test_single_layer_produces_one_trace(self):
+    def test_zero_layers_still_has_a_map_type_trace_so_the_map_renders(self):
+        # Regression test: a figure with zero traces of any kind causes
+        # Plotly to render a generic Cartesian scatter plot instead of a
+        # map (confirmed visually — see M9 manual checkpoint). There must
+        # always be at least one Scattermap-family trace present.
+        result = build_figure(-22.88, -42.02, {})
+        assert len(result.figure.data) >= 1
+        assert result.figure.data[-1].type == "scattermap"
+
+    def test_single_layer_produces_one_data_trace(self):
         result = build_figure(-22.88, -42.02, {WEATHER: _ok(WEATHER, [_record()])})
-        assert len(result.figure.data) == 1
+        assert _data_trace_count(result.figure) == 1
         assert result.warnings == []
 
-    def test_multiple_layers_produce_multiple_traces(self):
+    def test_multiple_layers_produce_multiple_data_traces(self):
         results = {WEATHER: _ok(WEATHER, [_record()]), HEALTH: _ok(HEALTH, [_record(label="hospital")])}
         result = build_figure(-22.88, -42.02, results)
-        assert len(result.figure.data) == 2
+        assert _data_trace_count(result.figure) == 2
 
     def test_trace_uses_layer_color_and_label(self):
         result = build_figure(-22.88, -42.02, {WEATHER: _ok(WEATHER, [_record()])})
@@ -79,17 +98,17 @@ class TestBuildFigureBasics:
 class TestBuildFigureStatusHandling:
     def test_error_status_excluded_from_traces_but_in_warnings(self):
         result = build_figure(-22.88, -42.02, {WEATHER: _error(WEATHER, "API fora do ar")})
-        assert len(result.figure.data) == 0
+        assert _data_trace_count(result.figure) == 0
         assert any("API fora do ar" in w for w in result.warnings)
 
     def test_empty_status_produces_warning_not_trace(self):
         result = build_figure(-22.88, -42.02, {HEALTH: _empty(HEALTH)})
-        assert len(result.figure.data) == 0
+        assert _data_trace_count(result.figure) == 0
         assert len(result.warnings) == 1
 
     def test_unsupported_location_produces_distinct_warning(self):
         result = build_figure(-22.88, -42.02, {"infodengue": _unsupported("infodengue", "fora da região")})
-        assert len(result.figure.data) == 0
+        assert _data_trace_count(result.figure) == 0
         assert any("fora da região" in w for w in result.warnings)
 
     def test_empty_and_error_produce_distinguishable_messages(self):
@@ -101,13 +120,13 @@ class TestBuildFigureStatusHandling:
 
     def test_unknown_layer_id_produces_warning_not_crash(self):
         result = build_figure(-22.88, -42.02, {"nao_existe": _ok("nao_existe", [_record()])})
-        assert len(result.figure.data) == 0
+        assert _data_trace_count(result.figure) == 0
         assert len(result.warnings) == 1
 
     def test_mixed_ok_and_error_layers(self):
         results = {WEATHER: _ok(WEATHER, [_record()]), HEALTH: _error(HEALTH, "falhou")}
         result = build_figure(-22.88, -42.02, results)
-        assert len(result.figure.data) == 1
+        assert _data_trace_count(result.figure) == 1
         assert len(result.warnings) == 1
 
 
@@ -115,12 +134,11 @@ class TestBuildFigureCoordinateFiltering:
     def test_records_missing_coordinates_are_silently_dropped_when_others_are_valid(self):
         records = [_record(lat=None, lon=None), _record()]
         result = build_figure(-22.88, -42.02, {WEATHER: _ok(WEATHER, records)})
-        assert len(result.figure.data) == 1
-        assert len(result.figure.data[0].lat) == 1
+        assert _data_trace_count(result.figure) == 1
         assert result.warnings == []
 
     def test_all_records_missing_coordinates_produces_warning_not_empty_trace(self):
         records = [_record(lat=None, lon=None)]
         result = build_figure(-22.88, -42.02, {WEATHER: _ok(WEATHER, records)})
-        assert len(result.figure.data) == 0
+        assert _data_trace_count(result.figure) == 0
         assert len(result.warnings) == 1
