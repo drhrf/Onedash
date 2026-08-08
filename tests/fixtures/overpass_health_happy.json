@@ -1,0 +1,37 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62",
+  "osm3s": {
+    "timestamp_osm_base": "2026-08-01T00:00:00Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 100001,
+      "lat": -22.8890,
+      "lon": -42.0280,
+      "timestamp": "2024-03-15T10:22:00Z",
+      "version": 3,
+      "tags": {"amenity": "hospital", "name": "Hospital Municipal Álvaro Alvim"}
+    },
+    {
+      "type": "node",
+      "id": 100002,
+      "lat": -22.8850,
+      "lon": -42.0300,
+      "timestamp": "2022-11-02T08:00:00Z",
+      "version": 2,
+      "tags": {"amenity": "pharmacy"}
+    },
+    {
+      "type": "node",
+      "id": 100003,
+      "lat": -22.8800,
+      "lon": -42.0100,
+      "timestamp": "2025-01-20T16:45:00Z",
+      "version": 1,
+      "tags": {"amenity": "clinic", "name": "Clínica da Família"}
+    }
+  ]
+}

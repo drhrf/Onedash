@@ -1,0 +1,14 @@
+{
+  "version": 0.6,
+  "elements": [
+    {"type": "way", "id": 200001, "tags": {"amenity": "hospital", "name": "Way sem coordenadas"}},
+    {
+      "type": "node",
+      "id": 100001,
+      "lat": -22.889,
+      "lon": -42.028,
+      "timestamp": "2024-01-01T00:00:00Z",
+      "tags": {"amenity": "hospital", "name": "Hospital Válido"}
+    }
+  ]
+}
