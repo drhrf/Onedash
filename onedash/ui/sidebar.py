@@ -6,9 +6,10 @@ from onedash import config
 from onedash import strings_pt_br as t
 from onedash.datasources.base import AreaOfInterest
 from onedash.datasources.open_meteo_geocoding import search_locations
+from onedash.grid_layout import SUPPORTED_PANEL_COUNTS
 
 
-def render_sidebar() -> tuple[AreaOfInterest, str]:
+def render_sidebar() -> tuple[AreaOfInterest, str, int]:
     st.sidebar.header(t.SIDEBAR_LOCATION_HEADER)
 
     if "aoi_lat" not in st.session_state:
@@ -49,10 +50,17 @@ def render_sidebar() -> tuple[AreaOfInterest, str]:
         key="disease_id",
     )
 
+    panel_count = st.sidebar.select_slider(
+        t.SIDEBAR_PANEL_COUNT_LABEL,
+        options=SUPPORTED_PANEL_COUNTS,
+        value=SUPPORTED_PANEL_COUNTS[0],
+        key="panel_count",
+    )
+
     aoi = AreaOfInterest(
         lat=st.session_state.aoi_lat,
         lon=st.session_state.aoi_lon,
         radius_km=radius_km,
         label=st.session_state.aoi_label,
     )
-    return aoi, disease_id
+    return aoi, disease_id, panel_count

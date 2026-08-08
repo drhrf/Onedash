@@ -146,3 +146,54 @@ class TestLocationSearch:
         at.sidebar.button[0].click().run(timeout=15)
         assert not at.exception
         assert calls == []
+
+
+class TestGridResize:
+    def test_panel_count_controls_number_of_panels_rendered(self, monkeypatch):
+        monkeypatch.setattr("onedash.ui.panel.fetch_layer", lambda *a, **k: _ok_result())
+        at = _make_app()
+        at.run(timeout=15)
+        assert len(at.multiselect) == 1  # default panel count is 1
+
+        at.sidebar.select_slider[0].set_value(4).run(timeout=15)
+        assert not at.exception
+        assert len(at.multiselect) == 4
+
+        at.sidebar.select_slider[0].set_value(6).run(timeout=15)
+        assert not at.exception
+        assert len(at.multiselect) == 6
+
+    def test_resize_sequence_never_raises_and_preserves_panel_zero_state(self, monkeypatch):
+        # Regression coverage for the fixed-absolute-widget-key design
+        # (grid_layout.compute_rows always assigns panel 0 the same index
+        # regardless of N): panel 0's layer selection must survive being
+        # shrunk and grown repeatedly, and no step should raise
+        # Streamlit's DuplicateWidgetID-style error.
+        monkeypatch.setattr("onedash.ui.panel.fetch_layer", lambda *a, **k: _ok_result())
+        at = _make_app()
+        at.run(timeout=15)
+
+        at.multiselect[0].select("open_meteo_weather").run(timeout=15)
+        assert not at.exception
+        assert at.multiselect[0].value == ["open_meteo_weather"]
+
+        for target_count in (4, 6, 2, 1, 6):
+            at.sidebar.select_slider[0].set_value(target_count).run(timeout=15)
+            assert not at.exception, f"resize to {target_count} raised: {list(at.exception)}"
+            assert len(at.multiselect) == target_count
+            assert at.multiselect[0].value == ["open_meteo_weather"], (
+                f"panel 0 lost its selection after resizing to {target_count}"
+            )
+
+    def test_each_panel_has_independent_layer_selection(self, monkeypatch):
+        monkeypatch.setattr("onedash.ui.panel.fetch_layer", lambda *a, **k: _ok_result())
+        at = _make_app()
+        at.run(timeout=15)
+        at.sidebar.select_slider[0].set_value(3).run(timeout=15)
+
+        at.multiselect[0].select("open_meteo_weather").run(timeout=15)
+        at.multiselect[1].select("overpass_health").run(timeout=15)
+
+        assert at.multiselect[0].value == ["open_meteo_weather"]
+        assert at.multiselect[1].value == ["overpass_health"]
+        assert at.multiselect[2].value == []
