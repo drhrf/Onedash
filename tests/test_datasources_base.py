@@ -123,3 +123,28 @@ class TestDataSourceTemplateMethod:
         source = fake_data_source_cls(raise_error=RuntimeError("x"), clock=lambda: fixed)
         result = source.fetch(sample_aoi)
         assert result.fetched_at == fixed
+
+
+class TestDataSourceResultHelpers:
+    def test_ok_helper_sets_status_and_records(self, fake_data_source_cls):
+        source = fake_data_source_cls()
+        record = GeoRecord(id="1", lat=0.0, lon=0.0)
+        result = source._ok([record], observation_time=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        assert result.status is SourceStatus.OK
+        assert result.records == [record]
+        assert result.source_id == "fake"
+
+    def test_empty_helper(self, fake_data_source_cls):
+        result = fake_data_source_cls()._empty()
+        assert result.status is SourceStatus.EMPTY
+        assert result.records == []
+
+    def test_error_helper_carries_message(self, fake_data_source_cls):
+        result = fake_data_source_cls()._error("deu ruim")
+        assert result.status is SourceStatus.ERROR
+        assert result.error_message == "deu ruim"
+
+    def test_unsupported_location_helper(self, fake_data_source_cls):
+        result = fake_data_source_cls()._unsupported_location("fora do Brasil")
+        assert result.status is SourceStatus.UNSUPPORTED_LOCATION
+        assert result.error_message == "fora do Brasil"

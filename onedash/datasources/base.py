@@ -141,3 +141,31 @@ class DataSource(ABC):
 
     @abstractmethod
     def _fetch(self, aoi: AreaOfInterest, params: dict[str, Any]) -> FetchResult: ...
+
+    def _ok(self, records: list[GeoRecord], observation_time: datetime | None = None) -> FetchResult:
+        return FetchResult(
+            source_id=self.source_id,
+            status=SourceStatus.OK,
+            records=records,
+            observation_time=observation_time,
+            fetched_at=self._clock(),
+        )
+
+    def _empty(self) -> FetchResult:
+        return FetchResult(source_id=self.source_id, status=SourceStatus.EMPTY, fetched_at=self._clock())
+
+    def _error(self, message: str) -> FetchResult:
+        return FetchResult(
+            source_id=self.source_id,
+            status=SourceStatus.ERROR,
+            fetched_at=self._clock(),
+            error_message=message,
+        )
+
+    def _unsupported_location(self, message: str) -> FetchResult:
+        return FetchResult(
+            source_id=self.source_id,
+            status=SourceStatus.UNSUPPORTED_LOCATION,
+            fetched_at=self._clock(),
+            error_message=message,
+        )
