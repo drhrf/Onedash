@@ -5,29 +5,24 @@ import streamlit as st
 from onedash import strings_pt_br as t
 from onedash.datasources.base import AreaOfInterest, SourceStatus
 from onedash.datasources.cached import fetch_layer
-from onedash.freshness import FreshnessLevel, compute_freshness
+from onedash.grid_layout import map_height_px
 from onedash.layer_registry import LAYERS, all_layer_ids, get_layer
 from onedash.map_builder import build_figure
-
-FRESHNESS_COLOR = {
-    FreshnessLevel.FRESH: "green",
-    FreshnessLevel.AGING: "orange",
-    FreshnessLevel.STALE: "red",
-    FreshnessLevel.UNKNOWN: "gray",
-}
+from onedash.summaries import freshness_line
 
 _LAYER_OPTIONS = all_layer_ids()
 _LAYER_LABELS = {layer.layer_id: layer.label_pt for layer in LAYERS}
 
 
 @st.fragment
-def render_panel(panel_index: int, aoi: AreaOfInterest, disease: str) -> None:
+def render_panel(panel_index: int, aoi: AreaOfInterest, disease: str, panel_count: int = 1) -> None:
     key_prefix = f"panel_{panel_index}"
 
     selected_layer_ids = st.multiselect(
         t.PANEL_LAYER_SELECT_LABEL,
         options=_LAYER_OPTIONS,
         format_func=lambda layer_id: _LAYER_LABELS[layer_id],
+        placeholder=t.PANEL_LAYER_SELECT_PLACEHOLDER,
         key=f"{key_prefix}_layers",
     )
 
@@ -36,7 +31,7 @@ def render_panel(panel_index: int, aoi: AreaOfInterest, disease: str) -> None:
         for layer_id in selected_layer_ids
     }
 
-    build_result = build_figure(aoi.lat, aoi.lon, results)
+    build_result = build_figure(aoi.lat, aoi.lon, results, height=map_height_px(panel_count))
     st.plotly_chart(build_result.figure, width="stretch", key=f"{key_prefix}_map")
 
     if not selected_layer_ids:
@@ -49,23 +44,10 @@ def render_panel(panel_index: int, aoi: AreaOfInterest, disease: str) -> None:
 
 
 def _render_freshness_badges(selected_layer_ids: list[str], results: dict) -> None:
-    # Two distinct timestamps are shown deliberately: how old the DATA
-    # itself is (observation_time, color-coded) vs. how recently we simply
-    # CHECKED the API (fetched_at, a plain caption) — a cached-but-stale
-    # result would otherwise look "fresh" just because it was checked
-    # moments ago, hiding the actual data lag this feature exists to show.
-    lines = []
-    for layer_id in selected_layer_ids:
-        result = results.get(layer_id)
-        if result is None or result.status is not SourceStatus.OK:
-            continue
-        layer = get_layer(layer_id)
-        fresh = compute_freshness(result.observation_time, profile=layer.source_cls.freshness_profile)
-        checked = compute_freshness(result.fetched_at, profile="default")
-        color = FRESHNESS_COLOR[fresh.level]
-        lines.append(
-            f":{color}[●] **{layer.label_pt}**: {fresh.description} "
-            f"({t.PANEL_FRESHNESS_CHECKED_PREFIX} {checked.description})"
-        )
+    lines = [
+        freshness_line(get_layer(layer_id), results[layer_id])
+        for layer_id in selected_layer_ids
+        if layer_id in results and results[layer_id].status is SourceStatus.OK
+    ]
     if lines:
         st.caption("  \n".join(lines))

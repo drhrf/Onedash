@@ -56,6 +56,18 @@ class TestFetchLayerCaching:
         fetch_layer("open_meteo_weather", -22.8894, -42.0286, 50.0)
         assert len(call_counter) == 2
 
+    def test_clearing_the_cache_forces_a_refetch(self, call_counter):
+        # This is what the sidebar's "Atualizar dados" button does; without
+        # it a user is stuck with whatever the TTL last cached, on a
+        # dashboard whose whole premise is showing current data age.
+        fetch_layer("open_meteo_weather", -22.8894, -42.0286, 25.0)
+        fetch_layer("open_meteo_weather", -22.8894, -42.0286, 25.0)
+        assert len(call_counter) == 1
+
+        fetch_layer.clear()
+        fetch_layer("open_meteo_weather", -22.8894, -42.0286, 25.0)
+        assert len(call_counter) == 2
+
     def test_disease_param_only_passed_for_infodengue(self, monkeypatch):
         from onedash.datasources.infodengue import InfoDengueSource
 

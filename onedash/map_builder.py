@@ -8,6 +8,7 @@ from onedash.datasources.base import FetchResult, SourceStatus
 from onedash.layer_registry import get_layer
 
 DEFAULT_ZOOM = 10
+DEFAULT_HEIGHT_PX = 520
 MAP_STYLE = "open-street-map"
 MARKER_SIZE = 14
 
@@ -23,6 +24,7 @@ def build_figure(
     center_lon: float,
     results: dict[str, FetchResult],
     zoom: float = DEFAULT_ZOOM,
+    height: int = DEFAULT_HEIGHT_PX,
 ) -> FigureBuildResult:
     """results maps layer_id -> FetchResult for whichever layers are
     currently selected on this panel. Never raises: bad/missing data for one
@@ -78,6 +80,6 @@ def build_figure(
         map=dict(style=MAP_STYLE, center=dict(lat=center_lat, lon=center_lon), zoom=zoom),
         margin=dict(l=0, r=0, t=0, b=0),
         showlegend=True,
-        height=500,
+        height=height,
     )
     return FigureBuildResult(figure=fig, warnings=warnings)

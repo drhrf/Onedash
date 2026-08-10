@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import pytest
 
 from onedash.datasources.base import FetchResult, GeoRecord, SourceStatus
-from onedash.map_builder import build_figure
+from onedash.map_builder import DEFAULT_HEIGHT_PX, build_figure
 from onedash.layer_registry import get_layer
 
 FETCHED_AT = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -93,6 +93,20 @@ class TestBuildFigureBasics:
         assert map_layout.center.lat == -22.88
         assert map_layout.center.lon == -42.02
         assert map_layout.zoom == 12
+
+
+class TestBuildFigureHeight:
+    def test_defaults_to_the_single_panel_height(self):
+        result = build_figure(-22.88, -42.02, {})
+        assert result.figure.layout.height == DEFAULT_HEIGHT_PX
+
+    def test_height_is_honored(self):
+        result = build_figure(-22.88, -42.02, {}, height=300)
+        assert result.figure.layout.height == 300
+
+    def test_height_applies_with_data_layers_too(self):
+        result = build_figure(-22.88, -42.02, {WEATHER: _ok(WEATHER, [_record()])}, height=380)
+        assert result.figure.layout.height == 380
 
 
 class TestBuildFigureStatusHandling:

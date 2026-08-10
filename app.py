@@ -14,4 +14,4 @@ for row in compute_rows(panel_count):
     columns = st.columns(len(row))
     for column, panel_index in zip(columns, row):
         with column:
-            render_panel(panel_index, aoi, disease)
+            render_panel(panel_index, aoi, disease, panel_count)

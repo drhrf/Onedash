@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from streamlit.testing.v1 import AppTest
 
 from onedash.datasources.base import FetchResult, SourceStatus
 from onedash.datasources.open_meteo_geocoding import GeocodeMatch, GeocodeSearchResult
+from onedash.grid_layout import map_height_px
 
 APP_PATH = str(Path(__file__).resolve().parent.parent / "app.py")
 FETCHED_AT = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -183,6 +185,63 @@ class TestLocationSearch:
         at.sidebar.button[0].click().run(timeout=15)
         assert not at.exception
         assert calls == []
+
+
+class TestMapHeightWiring:
+    def _first_map_height(self, at) -> int:
+        # The rendered figure isn't exposed as an AppTest value, but its
+        # serialized spec is — enough to prove panel count actually reaches
+        # the figure, not just that map_height_px() returns the right number.
+        return json.loads(at.get("plotly_chart")[0].proto.spec)["layout"]["height"]
+
+    def test_single_panel_uses_the_tall_layout(self):
+        at = _make_app()
+        at.run(timeout=15)
+        assert self._first_map_height(at) == map_height_px(1)
+
+    def test_growing_the_grid_shrinks_each_map(self):
+        at = _make_app()
+        at.run(timeout=15)
+        tall = self._first_map_height(at)
+        at.sidebar.select_slider[0].set_value(6).run(timeout=15)
+        assert not at.exception
+        short = self._first_map_height(at)
+        assert short == map_height_px(6)
+        assert short < tall
+
+
+class TestRefreshButton:
+    def _refresh_button(self, at):
+        # button[0] is the location search; the refresh control is the second.
+        return at.sidebar.button[1]
+
+    def test_refresh_button_is_present_and_labelled_in_portuguese(self):
+        at = _make_app()
+        at.run(timeout=15)
+        assert self._refresh_button(at).label == "Atualizar dados"
+
+    def test_clicking_refresh_clears_the_cache_and_does_not_raise(self, monkeypatch):
+        cleared = []
+        monkeypatch.setattr("onedash.ui.sidebar.fetch_layer.clear", lambda: cleared.append(1))
+        at = _make_app()
+        at.run(timeout=15)
+        self._refresh_button(at).click().run(timeout=15)
+        assert not at.exception
+        assert cleared == [1]
+
+    def test_refresh_confirms_in_the_sidebar(self, monkeypatch):
+        monkeypatch.setattr("onedash.ui.sidebar.fetch_layer.clear", lambda: None)
+        at = _make_app()
+        at.run(timeout=15)
+        self._refresh_button(at).click().run(timeout=15)
+        assert any("atualizados" in s.value.lower() for s in at.sidebar.success)
+
+    def test_cache_is_not_cleared_on_an_ordinary_run(self, monkeypatch):
+        cleared = []
+        monkeypatch.setattr("onedash.ui.sidebar.fetch_layer.clear", lambda: cleared.append(1))
+        at = _make_app()
+        at.run(timeout=15)
+        assert cleared == []
 
 
 class TestGridResize:

@@ -15,6 +15,10 @@ class LayerDefinition:
     label_pt: str
     source_cls: type[DataSource]
     color: str
+    # Plural noun used when a layer returns many records and listing every
+    # label would be useless ("128 estabelecimentos" beats 128 hospital names
+    # in a caption). Single-record layers show their own label instead.
+    record_noun_pt: str = "registros"
 
     @property
     def layer_id(self) -> str:
@@ -22,11 +26,13 @@ class LayerDefinition:
 
 
 LAYERS: tuple[LayerDefinition, ...] = (
-    LayerDefinition("Clima atual", OpenMeteoWeatherSource, color="#f97316"),
-    LayerDefinition("Qualidade do ar", OpenMeteoAirQualitySource, color="#8b5cf6"),
-    LayerDefinition("Condições marítimas", OpenMeteoMarineSource, color="#0ea5e9"),
-    LayerDefinition("Estabelecimentos de saúde", OverpassHealthSource, color="#ef4444"),
-    LayerDefinition("Vigilância de arboviroses", InfoDengueSource, color="#22c55e"),
+    LayerDefinition("Clima atual", OpenMeteoWeatherSource, color="#f97316", record_noun_pt="medições"),
+    LayerDefinition("Qualidade do ar", OpenMeteoAirQualitySource, color="#8b5cf6", record_noun_pt="medições"),
+    LayerDefinition("Condições marítimas", OpenMeteoMarineSource, color="#0ea5e9", record_noun_pt="medições"),
+    LayerDefinition(
+        "Estabelecimentos de saúde", OverpassHealthSource, color="#ef4444", record_noun_pt="estabelecimentos"
+    ),
+    LayerDefinition("Vigilância de arboviroses", InfoDengueSource, color="#22c55e", record_noun_pt="municípios"),
 )
 
 _BY_ID = {layer.layer_id: layer for layer in LAYERS}

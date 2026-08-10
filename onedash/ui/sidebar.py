@@ -5,6 +5,7 @@ import streamlit as st
 from onedash import config
 from onedash import strings_pt_br as t
 from onedash.datasources.base import AreaOfInterest
+from onedash.datasources.cached import fetch_layer
 from onedash.datasources.open_meteo_geocoding import search_locations
 from onedash.grid_layout import SUPPORTED_PANEL_COUNTS
 
@@ -56,6 +57,17 @@ def render_sidebar() -> tuple[AreaOfInterest, str, int]:
         value=SUPPORTED_PANEL_COUNTS[0],
         key="panel_count",
     )
+
+    st.sidebar.header(t.SIDEBAR_REFRESH_HEADER)
+    if st.sidebar.button(t.SIDEBAR_REFRESH_BUTTON, help=t.SIDEBAR_REFRESH_HELP, key="refresh_button"):
+        # Results are cached for CACHE_TTL_SECONDS to stay polite to the
+        # upstream APIs (Overpass especially). Clearing that cache is the
+        # only way a user can pull data newer than the TTL — on a dashboard
+        # whose whole premise is showing real data age, being unable to ask
+        # for a fresh reading would be a hole. The button click already
+        # triggers a rerun, so the panels refetch in this same run.
+        fetch_layer.clear()
+        st.sidebar.success(t.SIDEBAR_REFRESH_DONE)
 
     aoi = AreaOfInterest(
         lat=st.session_state.aoi_lat,
